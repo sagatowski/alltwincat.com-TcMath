@@ -1,0 +1,217 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4022.16">
+  <POU Name="FB_MovingAverage_Test" Id="{25dff0ed-ecf0-4d84-90d1-084b3e7ddca0}" SpecialFunc="None">
+    <Declaration><![CDATA[{attribute 'call_after_init'}
+FUNCTION_BLOCK FB_MovingAverage_Test EXTENDS FB_TestSuite IMPLEMENTS I_RunnableTestSuite
+VAR
+    Assert : TcUnit.FB_Assert;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+    <Method Name="AddFiveNumbersExpectAverageOfAll" Id="{e54e7a27-5a78-4956-88fa-ba083936d395}">
+      <Declaration><![CDATA[METHOD PRIVATE AddFiveNumbersExpectAverageOfAll
+VAR
+    DataArray : ARRAY[1..5] OF LREAL;
+    MovingAverage : FB_MovingAverage(StorageArray := ADR(DataArray), FilterSize := 5);
+
+    ExpectedValue : LREAL := 1.0;
+    CurrentAverage : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('AddFiveNumbersExpectAverageOfAll');
+
+MovingAverage.AddDataPoint(x := 1.0);
+MovingAverage.AddDataPoint(x := 1.0);
+MovingAverage.AddDataPoint(x := 1.0);
+MovingAverage.AddDataPoint(x := 1.0);
+MovingAverage.AddDataPoint(x := 1.0);
+
+CurrentAverage := MovingAverage.GetAverage();
+
+Assert.AssertEquals(Expected := ExpectedValue,
+                    Actual := CurrentAverage,
+                    Message := 'Moving average value not correct');
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddJustOneNumberExpectAverageToBeThatOneNumber" Id="{e3af12d3-4b1d-459f-bd6b-770c540e4cce}">
+      <Declaration><![CDATA[METHOD PRIVATE AddJustOneNumberExpectAverageToBeThatOneNumber
+VAR
+    DataArray : ARRAY[0..4] OF LREAL;
+    MovingAverage : FB_MovingAverage(StorageArray := ADR(DataArray), FilterSize := 5);
+    ExpectedValue : LREAL := 113.0;
+    CurrentAverage : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('AddJustOneNumberExpectAverageToBeThatOneNumber');
+
+MovingAverage.AddDataPoint(x := 113.0);
+
+CurrentAverage := MovingAverage.GetAverage();
+
+Assert.AssertEquals(Expected := ExpectedValue,
+                    Actual := CurrentAverage,
+                    Message := 'Moving average value not correct');]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddLessThanFilterSizeExpectAverageOfAddedValues" Id="{e4b53cec-f1a6-4a70-9282-6041423938ba}">
+      <Declaration><![CDATA[METHOD PRIVATE AddLessThanFilterSizeExpectAverageOfAddedValues
+VAR
+    DataArray : ARRAY[1..5] OF LREAL;
+    MovingAverage : FB_MovingAverage(StorageArray := ADR(DataArray), FilterSize := 5);
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('AddLessThanFilterSizeExpectAverageOfAddedValues');
+
+MovingAverage.AddDataPoint(x := 110.0);
+MovingAverage.AddDataPoint(x := 5.0);
+
+Assert.AssertEquals_LREAL(Expected := 57.5,
+                          Actual := MovingAverage.GetAverage(),
+                          Delta := 0.0001,
+                          Message := 'Moving average value not correct');
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="AddMoreThanFilterSizeExpectAverageOfLastAdded" Id="{0f803916-f336-4c54-8218-bebfdad312a5}">
+      <Declaration><![CDATA[METHOD PRIVATE AddMoreThanFilterSizeExpectAverageOfLastAdded
+VAR
+    DataArray : ARRAY[4..6] OF LREAL;
+    MovingAverage : FB_MovingAverage(StorageArray := ADR(DataArray), FilterSize := 3);
+
+    ExpectedValue : LREAL := 115.74292;
+    CurrentAverage : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('AddMoreThanFilterSizeExpectAverageOfLastAdded');
+
+MovingAverage.AddDataPoint(x := 4.5135);
+MovingAverage.AddDataPoint(x := 84.76436);
+MovingAverage.AddDataPoint(x := 257.123);
+MovingAverage.AddDataPoint(x := 5.3414);
+
+Assert.AssertEquals_LREAL(Expected := 115.74292,
+                          Actual := MovingAverage.GetAverage(),
+                          Delta := 0.01,
+                          Message := 'Moving average value not correct');
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{53724fbe-301f-4ccc-8c5e-7dc4fffcbcd5}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.RegisterTestSuite(THIS^);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="RunTests" Id="{00132720-c68e-4897-be2a-dc9793824408}">
+      <Declaration><![CDATA[METHOD RunTests : TCUNIT.E_TestSuiteRunState]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[AddFiveNumbersExpectAverageOfAll();
+AddLessThanFilterSizeExpectAverageOfAddedValues();
+UseBiggerStorageThanFilterSizeExpectAverageOfFilterSize();
+AddMoreThanFilterSizeExpectAverageOfLastAdded();
+AddJustOneNumberExpectAverageToBeThatOneNumber();
+
+RunTests := TCUNIT.E_TestSuiteRunState.FINISHED;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="UseBiggerStorageThanFilterSizeExpectAverageOfFilterSize" Id="{658b115f-0b3d-4690-8f27-bd96d0800255}">
+      <Declaration><![CDATA[METHOD PRIVATE UseBiggerStorageThanFilterSizeExpectAverageOfFilterSize
+VAR
+    DataArray : ARRAY[1..5] OF LREAL;
+    MovingAverage : FB_MovingAverage(StorageArray := ADR(DataArray), FilterSize := 3);
+
+    ExpectedValue : LREAL := 11.0;
+    CurrentAverage : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[TEST('UseBiggerStorageThanFilterSizeExpectAverageOfFilterSize');
+
+MovingAverage.AddDataPoint(x := 2.0);
+MovingAverage.AddDataPoint(x := 3.0);
+MovingAverage.AddDataPoint(x := 4.0);
+MovingAverage.AddDataPoint(x := 5.0);
+MovingAverage.AddDataPoint(x := 6.0);
+MovingAverage.AddDataPoint(x := 7.0);
+MovingAverage.AddDataPoint(x := 8.0);
+MovingAverage.AddDataPoint(x := 9.0);
+MovingAverage.AddDataPoint(x := 10.0);
+MovingAverage.AddDataPoint(x := 11.0);
+MovingAverage.AddDataPoint(x := 12.0);
+
+CurrentAverage := MovingAverage.GetAverage();
+
+Assert.AssertEquals(Expected := ExpectedValue,
+                    Actual := CurrentAverage,
+                    Message := 'Moving average value not correct');
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="FB_MovingAverage_Test">
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.AddFiveNumbersExpectAverageOfAll">
+      <LineId Id="24" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="11" Count="3" />
+      <LineId Id="21" Count="1" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.AddJustOneNumberExpectAverageToBeThatOneNumber">
+      <LineId Id="24" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="16" Count="1" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.AddLessThanFilterSizeExpectAverageOfAddedValues">
+      <LineId Id="24" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="34" Count="0" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="35" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.AddMoreThanFilterSizeExpectAverageOfLastAdded">
+      <LineId Id="24" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="11" Count="2" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.FB_init">
+      <LineId Id="7" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.RunTests">
+      <LineId Id="10" Count="4" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="4" Count="0" />
+    </LineIds>
+    <LineIds Name="FB_MovingAverage_Test.UseBiggerStorageThanFilterSizeExpectAverageOfFilterSize">
+      <LineId Id="24" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="34" Count="11" />
+      <LineId Id="15" Count="0" />
+      <LineId Id="10" Count="0" />
+      <LineId Id="16" Count="1" />
+      <LineId Id="23" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
